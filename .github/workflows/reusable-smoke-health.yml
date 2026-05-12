@@ -1,0 +1,31 @@
+name: Reusable smoke health
+
+# Minimal `workflow_call` contract for repos to prove `uses:` wiring to blakegallagher1/.github.
+# Bump caller pins (SHA or semver tag) deliberately when changing this file.
+
+on:
+  workflow_call:
+    inputs:
+      caller-name:
+        description: Caller identifier for CI logs / audit trail
+        required: false
+        type: string
+        default: anonymous
+
+permissions:
+  contents: read
+
+jobs:
+  ping:
+    name: Ping
+    runs-on: ubuntu-24.04-arm
+    timeout-minutes: 5
+    steps:
+      - name: Shared smoke OK
+        shell: bash
+        run: |
+          set -euo pipefail
+          echo "::notice::reusable-smoke-health OK caller=${CALLER}"
+          printf 'runner_os=%s\n' "${RUNNER_OS}"
+        env:
+          CALLER: ${{ inputs.caller-name }}
