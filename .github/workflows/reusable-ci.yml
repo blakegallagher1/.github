@@ -1,0 +1,70 @@
+name: Reusable CI (Node/TS)
+
+on:
+  workflow_call:
+    inputs:
+      node-version:
+        description: Node.js version to use
+        required: false
+        type: string
+        default: '20'
+      package-manager:
+        description: "npm | pnpm | yarn"
+        required: false
+        type: string
+        default: 'npm'
+      run-lint:
+        required: false
+        type: boolean
+        default: true
+      run-typecheck:
+        required: false
+        type: boolean
+        default: true
+      run-test:
+        required: false
+        type: boolean
+        default: true
+      run-build:
+        required: false
+        type: boolean
+        default: true
+
+jobs:
+  ci:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ inputs.node-version }}
+          cache: ${{ inputs.package-manager }}
+
+      - name: Install dependencies
+        run: |
+          case "${{ inputs.package-manager }}" in
+            pnpm) corepack enable && pnpm install --frozen-lockfile ;;
+            yarn) corepack enable && yarn install --immutable ;;
+            *)    npm ci ;;
+          esac
+
+      - name: Lint
+        if: ${{ inputs.run-lint }}
+        run: |
+          if npm run | grep -q " lint$"; then npm run lint --if-present; else echo "no lint script"; fi
+
+      - name: Typecheck
+        if: ${{ inputs.run-typecheck }}
+        run: |
+          if npm run | grep -q " typecheck$"; then npm run typecheck --if-present; else echo "no typecheck script"; fi
+
+      - name: Test
+        if: ${{ inputs.run-test }}
+        run: npm test --if-present
+
+      - name: Build
+        if: ${{ inputs.run-build }}
+        run: npm run build --if-present
